@@ -8,9 +8,17 @@ const {
   resetPassword
 } = require("../controllers/authController");
 
-router.post("/register", register);
-router.post("/login", login);
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password", resetPassword);
+const {
+  registerRules,
+  loginRules,
+  forgotPasswordRules,
+  resetPasswordRules,
+  validate
+} = require("../middleware/authMiddleware");
+
+router.post("/register", registerRules, validate, register);
+router.post("/login", loginRules, validate, login);
+router.post("/forgot-password", forgotPasswordRules, validate, forgotPassword);
+router.post("/reset-password", resetPasswordRules, validate, resetPassword);
 
 module.exports = router;

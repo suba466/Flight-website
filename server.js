@@ -8,13 +8,10 @@ const app = express();
 const sequelize = require("./src/config/db");
 const User = require("./src/models/userModel");
 const authRoutes = require("./src/routes/authRoutes");
-const sanitizeRequest = require("./src/middleware/sanitizeMiddleware");
 
 app.use(cors());
 app.use(express.json());
 
-// Sanitize incoming data globally
-app.use(sanitizeRequest);
 
 // Log every incoming request
 app.use((req, res, next) => {
