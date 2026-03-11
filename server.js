@@ -6,48 +6,48 @@ const app = express();
 
 // Database connection
 const sequelize = require("./config/db");
-
-// Models
 const User = require("./models/User");
-
-// Routes
 const authRoutes = require("./routes/authRoutes");
 
 app.use(cors());
 app.use(express.json());
 
-/* =========================
-   DATABASE SYNC
-========================= */
-
-sequelize.sync({ alter: true })
-  .then(() => {
-    console.log("Database & tables synced!");
-  })
-  .catch((err) => {
-    console.log("Error syncing database:", err);
-  });
-
-/* =========================
-   BASIC ROUTE
-========================= */
-
-app.get("/", (req, res) => {
-  res.send("Auth API running");
+// CLEAR LOGGING - YOU SHOULD SEE THIS FOR EVERY REQUEST
+app.use((req, res, next) => {
+  console.log(`[REQUEST RECEIVED] ${req.method} ${req.url}`);
+  next();
 });
 
-/* =========================
-   AUTH ROUTES
-========================= */
+// Sync Database
+sequelize.sync({ alter: true })
+  .then(() => {
+    console.log("SUCCESS: Database & tables synced!");
+  })
+  .catch((err) => {
+    console.error("DATABASE SYNC ERROR:", err);
+  });
 
+// AUTH ROUTES
 app.use("/api/auth", authRoutes);
 
-/* =========================
-   START SERVER
-========================= */
+// ROOT ROUTE
+app.get("/", (req, res) => {
+  res.send("Auth API is working!");
+});
 
-const PORT = 3000;
+// JSON 404 HANDLER (Instead of the HTML one you see)
+app.use((req, res) => {
+  console.log(`[404 ERROR] ${req.method} ${req.url}`);
+  res.status(404).json({
+    error: "Route not found",
+    message: `The endpoint ${req.method} ${req.url} does not exist on this server.`
+  });
+});
+
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`\n========================================`);
+  console.log(` SERVER RUNNING ON PORT ${PORT} `);
+  console.log(`========================================\n`);
 });
