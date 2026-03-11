@@ -4,6 +4,22 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const transporter = require("../config/mailer");
 
+const generateAccessToken = (user) => {
+  return jwt.sign(
+    { id: user.id, email: user.email },
+    process.env.JWT_SECRET || "secret_key",
+    { expiresIn: "15m" }
+  );
+};
+
+const generateRefreshToken = (user) => {
+  return jwt.sign(
+    { id: user.id },
+    process.env.JWT_REFRESH_SECRET || "refresh_secret_key",
+    { expiresIn: "7d" }
+  );
+};
+
 exports.register = async (req, res) => {
   try {
     const { full_name, email, password, phone } = req.body;
@@ -59,15 +75,16 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    const token = jwt.sign(
-      { id: user.id },
-      process.env.JWT_SECRET || "secret_key",
-      { expiresIn: "1h" }
-    );
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    user.refreshToken = refreshToken;
+    await user.save();
 
     res.json({
       message: "Login successful",
-      token,
+      accessToken,
+      refreshToken,
       user: {
         id: user.id,
         full_name: user.full_name,
@@ -157,5 +174,35 @@ exports.resetPassword = async (req, res) => {
   } catch (err) {
     console.error("Reset password error:", err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.refreshAccessToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Refresh token required" });
+    }
+
+    const user = await User.findOne({ where: { refreshToken } });
+
+    if (!user) {
+      return res.status(403).json({ message: "Invalid refresh token" });
+    }
+
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET || "refresh_secret_key"
+    );
+
+    const newAccessToken = generateAccessToken(user);
+
+    res.json({
+      accessToken: newAccessToken
+    });
+
+  } catch (error) {
+    res.status(403).json({ message: "Invalid or expired refresh token" });
   }
 };

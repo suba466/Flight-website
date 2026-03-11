@@ -31,6 +31,10 @@ const User = sequelize.define("User", {
     resetTokenExpiry: {
         type: DataTypes.DATE,
         field: "reset_token_expiry"
+    },
+    refreshToken: {
+        type: DataTypes.STRING,
+        field: "refresh_token"
     }
 }, {
     tableName: "users",
