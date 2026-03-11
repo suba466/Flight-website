@@ -6,13 +6,15 @@ const sequelize = new Sequelize(
     process.env.DB_PASS,
     {
         host: process.env.DB_HOST,
-        dialect: "postgres"
+        dialect: "postgres",
+        logging: false
     }
 );
 
-sequelize.authenticate().then(() => {
-    console.log("Database connected successfully");
-})
+sequelize.authenticate()
+    .then(() => {
+        console.log("Database connected successfully");
+    })
     .catch((err) => {
         console.log("Error connecting database:", err);
     });
