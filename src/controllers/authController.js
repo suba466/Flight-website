@@ -22,11 +22,41 @@ const generateRefreshToken = (user) => {
 
 exports.register = async (req, res) => {
   try {
-    const { full_name, email, password, phone } = req.body;
+    let { full_name, email, password, phone } = req.body;
+
+    // SANITIZE INPUT
+    full_name = full_name?.trim();
+    email = email?.trim().toLowerCase();
+    phone = phone?.replace(/\D/g, "");
+    password = password?.trim();
 
     // Validation
     if (!full_name || !email || !password || !phone) {
       return res.status(400).json({ message: "All fields are required (full_name, email, password, phone)" });
+    }
+
+    // NAME VALIDATION
+    const nameRegex = /^[A-Za-z ]+$/;
+    if (!nameRegex.test(full_name)) {
+      return res.status(400).json({ message: "Full name should contain only letters" });
+    }
+
+    // EMAIL VALIDATION
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    // PHONE VALIDATION
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ message: "Phone number must be 10 digits" });
+    }
+
+    // PASSWORD VALIDATION 
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ message: "Password must be at least 8 characters and include uppercase, lowercase, number and special character" });
     }
 
     const existingUser = await User.findOne({ where: { email } });
@@ -59,10 +89,20 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+
+    // SANITIZE INPUT
+    email = email?.trim().toLowerCase();
+    password = password?.trim();
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    // EMAIL VALIDATION
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
     }
 
     const user = await User.findOne({ where: { email } });
