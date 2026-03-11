@@ -1,10 +1,5 @@
 const jwt = require("jsonwebtoken");
 
-/**
- * Middleware to verify JWT token
- * Attach this to any protected route
- * Usage: router.get("/profile", verifyToken, controller)
- */
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
 
