@@ -192,10 +192,21 @@ exports.forgotPassword = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        message: "Authorization header missing or invalid format (Use: Bearer <token>)"
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const { newPassword } = req.body;
 
     if (!token || !newPassword) {
-      return res.status(400).json({ message: "Token and new password are required" });
+      return res.status(400).json({
+        message: "Token and new password are required"
+      });
     }
 
     const user = await User.findOne({ where: { resetToken: token } });
