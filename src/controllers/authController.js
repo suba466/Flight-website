@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const transporter = require("../config/mailer");
 
+// GENERATE ACCESS TOKEN
 const generateAccessToken = (user) => {
   return jwt.sign(
     { id: user.id, email: user.email },
@@ -12,6 +13,7 @@ const generateAccessToken = (user) => {
   );
 };
 
+// GENERATE REFRESH TOKEN
 const generateRefreshToken = (user) => {
   return jwt.sign(
     { id: user.id },
@@ -20,43 +22,40 @@ const generateRefreshToken = (user) => {
   );
 };
 
+// ================= REGISTER =================
 exports.register = async (req, res) => {
   try {
     let { full_name, email, password, phone } = req.body;
 
-    // SANITIZE INPUT
     full_name = full_name?.trim();
     email = email?.trim().toLowerCase();
     phone = phone?.replace(/\D/g, "");
     password = password?.trim();
 
-    // Validation
     if (!full_name || !email || !password || !phone) {
-      return res.status(400).json({ message: "All fields are required (full_name, email, password, phone)" });
+      return res.status(400).json({ message: "All fields required" });
     }
 
-    // NAME VALIDATION
     const nameRegex = /^[A-Za-z ]+$/;
     if (!nameRegex.test(full_name)) {
-      return res.status(400).json({ message: "Full name should contain only letters" });
+      return res.status(400).json({ message: "Name must contain only letters" });
     }
 
-    // EMAIL VALIDATION
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ message: "Invalid email format" });
     }
 
-    // PHONE VALIDATION
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ message: "Phone number must be 10 digits" });
+      return res.status(400).json({ message: "Phone must be 10 digits" });
     }
 
-    // PASSWORD VALIDATION 
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
     if (!passwordRegex.test(password)) {
-      return res.status(400).json({ message: "Password must be at least 8 characters and include uppercase, lowercase, number and special character" });
+      return res.status(400).json({
+        message: "Password must contain uppercase, lowercase, number and special character"
+      });
     }
 
     const existingUser = await User.findOne({ where: { email } });
@@ -82,27 +81,20 @@ exports.register = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error("Registration error:", err);
+    console.error("Register error:", err);
     res.status(500).json({ error: err.message });
   }
 };
 
+// ================= LOGIN =================
 exports.login = async (req, res) => {
   try {
     let { email, password } = req.body;
-
-    // SANITIZE INPUT
     email = email?.trim().toLowerCase();
     password = password?.trim();
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
-    }
-
-    // EMAIL VALIDATION
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: "Invalid email format" });
+      return res.status(400).json({ message: "Email and password required" });
     }
 
     const user = await User.findOne({ where: { email } });
@@ -137,25 +129,23 @@ exports.login = async (req, res) => {
   }
 };
 
+// ================= FORGOT PASSWORD =================
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
     if (!email) {
-      return res.status(400).json({ message: "Email is required" });
+      return res.status(400).json({ message: "Email required" });
     }
 
     const user = await User.findOne({ where: { email } });
-
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     const token = crypto.randomBytes(32).toString("hex");
-
     user.resetToken = token;
-    user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
-
+    user.resetTokenExpiry = Date.now() + 3600000;
     await user.save();
 
     const resetLink = `http://localhost:3000/reset-password?token=${token}`;
@@ -167,99 +157,79 @@ exports.forgotPassword = async (req, res) => {
     const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM,
       to: email,
-      subject: "Reset Your Password",
+      subject: "Reset Password",
       html: `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <h2 style="color: #4A90E2;">Password Reset Request</h2>
-        <p>You requested a password reset. Click the button below to set a new password:</p>
-        <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #4A90E2; color: #fff; text-decoration: none; border-radius: 5px;">Reset Password</a>
-        <p>If you didn't request this, please ignore this email.</p>
-        <p>This link will expire in 1 hour.</p>
-      </div>
+        <h2>Password Reset</h2>
+        <p>Click below to reset password</p>
+        <a href="${resetLink}">Reset Password</a>
+        <p>Link valid for 1 hour</p>
       `
     });
 
     console.log(`[SUCCESS]: Email sent! Message ID: ${info.messageId}`);
-    console.log(`[RESPONSE]: ${info.response}`);
 
-    res.json({ message: "Reset email sent successfully" });
-
+    res.json({ message: "Reset email sent" });
   } catch (err) {
     console.error("Forgot password error:", err);
     res.status(500).json({ error: err.message });
   }
 };
 
+// ================= RESET PASSWORD (HEADER TOKEN) =================
 exports.resetPassword = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        message: "Authorization header missing or invalid format (Use: Bearer <token>)"
-      });
+    if (!authHeader) {
+      return res.status(401).json({ message: "Authorization header missing" });
     }
 
     const token = authHeader.split(" ")[1];
     const { newPassword } = req.body;
 
     if (!token || !newPassword) {
-      return res.status(400).json({
-        message: "Token and new password are required"
-      });
+      return res.status(400).json({ message: "Token and new password required" });
     }
 
     const user = await User.findOne({ where: { resetToken: token } });
-
     if (!user) {
       return res.status(400).json({ message: "Invalid token" });
     }
 
     if (user.resetTokenExpiry < Date.now()) {
-      return res.status(400).json({ message: "Token has expired" });
+      return res.status(400).json({ message: "Token expired" });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
     user.password = hashedPassword;
     user.resetToken = null;
     user.resetTokenExpiry = null;
-
     await user.save();
 
     res.json({ message: "Password reset successful" });
-
   } catch (err) {
     console.error("Reset password error:", err);
     res.status(500).json({ error: err.message });
   }
 };
 
+// ================= REFRESH TOKEN =================
 exports.refreshAccessToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
-
     if (!refreshToken) {
       return res.status(401).json({ message: "Refresh token required" });
     }
 
     const user = await User.findOne({ where: { refreshToken } });
-
     if (!user) {
       return res.status(403).json({ message: "Invalid refresh token" });
     }
 
-    const decoded = jwt.verify(
-      refreshToken,
-      process.env.JWT_REFRESH_SECRET || "refresh_secret_key"
-    );
-
+    jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || "refresh_secret_key");
     const newAccessToken = generateAccessToken(user);
 
-    res.json({
-      accessToken: newAccessToken
-    });
-
+    res.json({ accessToken: newAccessToken });
   } catch (error) {
     res.status(403).json({ message: "Invalid or expired refresh token" });
   }
