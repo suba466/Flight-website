@@ -158,9 +158,13 @@ exports.forgotPassword = async (req, res) => {
 
     await user.save();
 
-    const resetLink = `http://localhost:5000/reset-password?token=${token}`;
+    const resetLink = `http://localhost:3000/reset-password?token=${token}`;
 
-    await transporter.sendMail({
+    console.log(`\n[MAIL] Sending Reset Link...`);
+    console.log(`[FROM]: ${process.env.EMAIL_USER}`);
+    console.log(`[TO]:   ${email}`);
+
+    const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM,
       to: email,
       subject: "Reset Your Password",
@@ -174,6 +178,9 @@ exports.forgotPassword = async (req, res) => {
       </div>
       `
     });
+
+    console.log(`[SUCCESS]: Email sent! Message ID: ${info.messageId}`);
+    console.log(`[RESPONSE]: ${info.response}`);
 
     res.json({ message: "Reset email sent successfully" });
 
