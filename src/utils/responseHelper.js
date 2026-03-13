@@ -1,5 +1,5 @@
-/**
- * Send a standardized success response
+/*
+  Send a standardized success response
  */
 const sendSuccess = (res, statusCode = 200, message = "Success", data = {}) => {
   return res.status(statusCode).json({
@@ -9,8 +9,8 @@ const sendSuccess = (res, statusCode = 200, message = "Success", data = {}) => {
   });
 };
 
-/**
- * Send a standardized error response
+/*
+ Send a standardized error response
  */
 const sendError = (res, statusCode = 500, message = "Internal Server Error", error = null) => {
   const response = {

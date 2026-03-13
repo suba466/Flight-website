@@ -22,7 +22,7 @@ const generateRefreshToken = (user) => {
   );
 };
 
-// ================= REGISTER =================
+// REGISTER 
 exports.register = async (req, res) => {
   try {
     let { full_name, email, password, phone } = req.body;
@@ -86,7 +86,7 @@ exports.register = async (req, res) => {
   }
 };
 
-// ================= LOGIN =================
+//  LOGIN 
 exports.login = async (req, res) => {
   try {
     let { email, password } = req.body;
@@ -129,7 +129,7 @@ exports.login = async (req, res) => {
   }
 };
 
-// ================= FORGOT PASSWORD =================
+//  FORGOT PASSWORD 
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -175,7 +175,7 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-// ================= RESET PASSWORD (HEADER TOKEN) =================
+//  RESET PASSWORD (HEADER TOKEN) 
 exports.resetPassword = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -213,7 +213,7 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// ================= REFRESH TOKEN =================
+//  REFRESH TOKEN 
 exports.refreshAccessToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
