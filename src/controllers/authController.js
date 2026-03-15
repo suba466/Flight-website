@@ -7,7 +7,7 @@ const transporter = require("../config/mailer");
 // GENERATE ACCESS TOKEN
 const generateAccessToken = (user) => {
   return jwt.sign(
-    { id: user.id, email: user.email },
+    { id: user.id, email: user.email, role: user.role },
     process.env.JWT_SECRET || "secret_key",
     { expiresIn: "15m" }
   );
@@ -25,12 +25,13 @@ const generateRefreshToken = (user) => {
 // REGISTER 
 exports.register = async (req, res) => {
   try {
-    let { full_name, email, password, phone } = req.body;
+    let { full_name, email, password, phone, role } = req.body;
 
     full_name = full_name?.trim();
     email = email?.trim().toLowerCase();
     phone = phone?.replace(/\D/g, "");
     password = password?.trim();
+    role = role || 'client';
 
     if (!full_name || !email || !password || !phone) {
       return res.status(400).json({ message: "All fields required" });
@@ -68,7 +69,8 @@ exports.register = async (req, res) => {
       full_name,
       email,
       password: hashedPassword,
-      phone
+      phone,
+      role
     });
 
     res.status(201).json({
@@ -77,7 +79,8 @@ exports.register = async (req, res) => {
         id: newUser.id,
         full_name: newUser.full_name,
         email: newUser.email,
-        phone: newUser.phone
+        phone: newUser.phone,
+        role: newUser.role
       }
     });
   } catch (err) {
@@ -120,7 +123,8 @@ exports.login = async (req, res) => {
       user: {
         id: user.id,
         full_name: user.full_name,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     });
   } catch (err) {
